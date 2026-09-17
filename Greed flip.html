@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Greed Flip — Head & Tail Edition</title>
+<style>
+*{box-sizing:border-box}
+:root{--bg:#090b10;--card:#121621;--card2:#171c28;--text:#f4f6fb;--muted:#9ba5b5;--line:#272e3c;--green:#43e08a;--red:#ff5d6c;--gold:#ffc857;--blue:#66a3ff}
+body{margin:0;background:radial-gradient(circle at top,#182033 0,#090b10 48%);color:var(--text);font-family:system-ui,Arial,sans-serif;min-height:100vh}
+button,input{font:inherit}
+button{cursor:pointer;border:0}
+.container{max-width:1150px;margin:auto;padding:20px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.logo{font-weight:900;font-size:25px;letter-spacing:.5px}.logo span{color:var(--gold)}
+.top-actions{display:flex;gap:10px;align-items:center}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.stat,.panel{background:linear-gradient(180deg,#141925,#10141d);border:1px solid var(--line);border-radius:16px;box-shadow:0 8px 30px #0004}
+.stat{padding:15px}.stat small{color:var(--muted);display:block;margin-bottom:6px}.stat b{font-size:20px}
+.grid{display:grid;grid-template-columns:1.15fr .85fr;gap:16px}
+.panel{padding:18px;margin-bottom:16px}.panel h2{font-size:18px;margin:0 0 5px}.sub{color:var(--muted);font-size:13px;margin-bottom:16px}
+.flipbox{text-align:center;padding:18px;border-radius:14px;background:#0d1119;border:1px solid var(--line)}
+.coin{width:115px;height:115px;margin:4px auto 8px;border-radius:50%;display:grid;place-items:center;font-size:26px;font-weight:900;background:linear-gradient(145deg,#ffe28a,#d99721);color:#5b3a00;border:6px solid #f7c957;box-shadow:0 10px 35px #d99b2430}
+.coin.flip{animation:spin .65s ease}
+@keyframes spin{50%{transform:rotateY(900deg) scale(1.08)}}
+.bet-under-coin{font-size:15px;font-weight:700;color:var(--gold);margin-bottom:12px}
+.result{font-weight:800;min-height:24px;margin-bottom:12px;font-size:18px}
+.adjust-row{display:flex;gap:6px;margin-bottom:12px}.adjust-row button{flex:1;padding:8px;background:#1e2536;color:var(--text);border-radius:6px;font-size:12px;font-weight:700}
+.adjust-row button:hover{background:#2a344d}
+input{width:100%;padding:12px;border-radius:10px;border:1px solid #303849;background:#0b0f16;color:white;outline:none;text-align:center;font-weight:bold;font-size:16px}
+input:focus{border-color:#6b83ad}
+.btn{padding:12px 15px;border-radius:10px;font-weight:800;background:#252c3b;color:white;transition:.2s}.btn:hover{filter:brightness(1.15)}
+.btn.primary{background:var(--gold);color:#1a1303}.btn.green{background:#1c9e5d}.btn.red{background:#b93649}.btn.blue{background:#3c70c5}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* Head and Tail Main Action Buttons */
+.flip-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.btn-choice{padding:16px;font-size:18px;font-weight:900;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 6px 15px #0005}
+.btn-choice.head{background:linear-gradient(135deg,#3c70c5,#254885);color:white;border:1px solid #5d8ee0}
+.btn-choice.tail{background:linear-gradient(135deg,#d99b24,#94650d);color:white;border:1px solid #f2bd54}
+
+.risk{margin:16px 0 12px}.bar{height:9px;background:#242a36;border-radius:20px;overflow:hidden}.fill{height:100%;width:25%;background:var(--green);transition:.3s}
+.riskline{display:flex;justify-content:space-between;color:var(--muted);font-size:12px;margin-bottom:6px}
+
+/* Active Bank Tracker */
+.active-bank-card{background:linear-gradient(135deg,#131b2e,#18253f);border:1px solid #2b3b5c;padding:16px;border-radius:14px;margin-bottom:15px}
+.timer-bar{height:6px;background:#0b0f16;border-radius:10px;overflow:hidden;margin-top:8px}
+.timer-fill{height:100%;width:0%;background:var(--blue);transition:width 0.1s linear}
+
+/* Modals */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,0.85);display:none;align-items:center;justify-content:center;padding:20px;z-index:999;backdrop-filter:blur(5px)}
+.modal.show{display:flex}
+.modalbox{max-width:520px;width:100%;background:#141925;border:1px solid #394152;border-radius:20px;padding:22px;max-height:90vh;overflow-y:auto}
+.modalbox.wide{max-width:900px}
+.modalbox h2{margin-top:0;font-size:22px}.close{float:right;background:transparent;color:#9ba5b5;font-size:24px;cursor:pointer}
+.modal-btns{display:flex;gap:10px;margin-top:16px}
+
+/* Bank Grid in Modal */
+.banks-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:15px}
+.bank-card{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;justify-content:space-between;transition:.2s}
+.bank-card:hover{border-color:#3d4a63;transform:translateY(-2px)}
+.bank-card h3{margin:0 0 4px;font-size:16px;display:flex;align-items:center;gap:6px}
+.bank-card p{font-size:12px;color:var(--muted);margin:8px 0;line-height:1.4}
+.bank-badge{font-size:10px;padding:3px 8px;border-radius:6px;background:#252d3d;color:var(--gold);font-weight:bold;width:max-content}
+.bank-rate{color:var(--green);font-weight:bold;font-size:13px;margin-top:4px}
+.bank-actions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:10px}
+
+.calc-box{background:#0b0f16;padding:12px;border-radius:10px;border:1px solid #283142;margin:12px 0;font-size:13px;line-height:1.6}
+.calc-box div{display:flex;justify-content:space-between}
+
+.log{max-height:250px;overflow-y:auto}.log p{margin:0;padding:8px 0;border-bottom:1px solid #202633;font-size:12px;color:#c7cfdb}
+.greenText{color:var(--green)}.redText{color:var(--red)}.goldText{color:var(--gold)}
+.note{font-size:11px;color:#737d8e;margin-top:12px;line-height:1.5}
+
+@media(max-width:800px){.stats{grid-template-columns:1fr 1fr}.grid{grid-template-columns:1fr}.banks-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+  <div class="logo">🎰 GREED <span>FLIP</span></div>
+  <div class="top-actions">
+    <button class="btn blue" onclick="app.openModal('bankModal')"><span id="lblBankBtn">🏦 ব্যাংক সিস্টেম</span></button>
+    <button class="btn" style="background:#303849" onclick="app.toggleLang()"><span id="lblLangBtn">🌐 English</span></button>
+  </div>
+</header>
+
+<section class="stats">
+  <div class="stat"><small id="lblCash">💰 ক্যাশ</small><b id="cash">10,000</b></div>
+  <div class="stat"><small id="lblDebt">💳 ঋণ</small><b id="debt">0</b></div>
+  <div class="stat"><small id="lblDeposit">🏦 ডিপোজিট</small><b id="deposit">0</b></div>
+  <div class="stat"><small id="lblNet">📊 নেট ওয়ার্থ</small><b id="net">10,000</b></div>
+</section>
+
+<!-- Active Deposit Tracker -->
+<div id="activeDepositTracker" class="active-bank-card" style="display:none;">
+  <div style="display:flex;justify-content:space-between;align-items:center;">
+    <div>
+      <span style="font-size:12px;color:var(--muted)" id="lblActiveBank">রানিং ডিপোজিট:</span>
+      <strong id="activeBankName" style="color:var(--gold)">-</strong>
+      <span class="bank-rate" id="activeBankRate" style="margin-left:8px;">(+0%/5s)</span>
+    </div>
+    <div>
+      <button class="btn green" style="padding:6px 12px;font-size:12px;" onclick="app.withdrawDeposit()"><span id="lblWithdrawBtn">💸 উত্তোলন করুন</span></button>
+    </div>
+  </div>
+  <div class="timer-bar"><div class="timer-fill" id="timerFill"></div></div>
+</div>
+
+<div class="grid">
+<main>
+<section class="panel">
+  <h2 id="lblCoinTitle">🪙 কয়েন ফ্লিপ (Head or Tail)</h2>
+  <div class="sub" id="lblCoinSub">আপনার পছন্দের দিক বেছে নিয়ে বাজি ধরুন।</div>
+  <div class="flipbox">
+    <div class="coin" id="coin">HEAD</div>
+    <div class="bet-under-coin" id="betUnderCoin">বাজির পরিমাণ: 500 coin</div>
+    <div class="result" id="result">HEAD অথবা TAIL বেছে নিন।</div>
+    
+    <div class="adjust-row">
+      <button onclick="app.adjBet(-100)">-100</button>
+      <button onclick="app.adjBet(100)">+100</button>
+      <button onclick="app.adjBet('half')">Half (½)</button>
+      <button onclick="app.adjBet('double')">Double (2x)</button>
+    </div>
+
+    <input id="betInput" type="number" min="1" step="1" value="500" oninput="app.updateBetUnderCoin()">
+    
+    <!-- Head/Tail Main Action Buttons -->
+    <div class="flip-actions">
+      <button class="btn btn-choice head" id="btnHead" onclick="app.flip('HEAD')">👑 HEAD</button>
+      <button class="btn btn-choice tail" id="btnTail" onclick="app.flip('TAIL')">🦅 TAIL</button>
+    </div>
+    
+    <div class="risk">
+      <div class="riskline"><span id="lblRiskTitle">ডাইনামিক অ্যালগরিদম ঝুঁকি</span><span id="riskText">সাধারণ বাজি</span></div>
+      <div class="bar"><div class="fill" id="riskFill"></div></div>
+    </div>
+    <div class="note" id="lblDisclaimer">এটি একটি সিমুলেশন গেম। কোনো বাস্তব টাকা বা আসল জুয়ার লেনদেন এখানে অন্তর্ভুক্ত নয়।</div>
+  </div>
+</section>
+</main>
+
+<aside>
+<section class="panel">
+  <h2 id="lblLogTitle">📋 আর্থিক লগ</h2>
+  <div class="sub" id="lblLogSub">আপনার সিদ্ধান্ত ও ফলাফলের বিবরণ।</div>
+  <div class="log" id="log"></div>
+</section>
+<section class="panel">
+  <h2 id="lblGameTitle">⚙️ গেম কন্ট্রোল</h2>
+  <div class="sub"><span id="lblCycleTitle">চক্র:</span> <b id="cycle">1</b></div>
+  <button class="btn" style="width:100%" onclick="app.resetGame()"><span id="lblReset">গেম রিস্টার্ট করুন</span></button>
+  <div class="note" id="lblGoal">লক্ষ্য: মানুষকে জুয়ার ভয়াবহতা সম্পর্কে বোঝানো এবং সচেতন করা। 😈</div>
+</section>
+</aside>
+</div>
+</div>
+
+<!-- Banks Main Modal -->
+<div class="modal" id="bankModal">
+ <div class="modalbox wide">
+   <button class="close" onclick="app.closeModal('bankModal')">×</button>
+   <h2 id="lblBankModalTitle">🏦 ব্যাংক সিস্টেম কেন্দ্রীয় হাব</h2>
+   <p class="sub" id="lblBankModalSub">আপনার সুবিধামতো ব্যাংকে লেনদেন করুন। প্রতিটি ব্যাংকের ঝুঁকি ও মুনাফা ভিন্ন!</p>
+   
+   <div class="banks-grid">
+     <!-- Prime Bank -->
+     <div class="bank-card">
+       <div>
+         <h3>🏛️ Prime Bank <span class="bank-badge" id="badgePrime">নিরাপদ</span></h3>
+         <div class="bank-rate" id="primeRateText">সুদ: +১.৫% / ৫ সেকেন্ড</div>
+         <p id="primeDesc">একদম নিরাপদ ব্যাংক। লোন ১৫% সুদে সর্বোচ্চ ২০,০০,০০০ coins।</p>
+       </div>
+       <div class="bank-actions">
+         <button class="btn blue" onclick="app.openLoan('Prime Bank', 2000000, 0.15)"><span class="lblLoanBtn">লোন</span></button>
+         <button class="btn green" onclick="app.openDepositModal('Prime Bank', 0.015, 0, 0)"><span class="lblDepBtn">ডিপোজিট</span></button>
+         <button class="btn red" onclick="app.openRepayModal()"><span class="lblRepayBtn">পরিশোধ</span></button>
+       </div>
+     </div>
+
+     <!-- Central Bank -->
+     <div class="bank-card">
+       <div>
+         <h3>🏦 Central Bank <span class="bank-badge" id="badgeCentral">সরকারি</span></h3>
+         <div class="bank-rate" id="centralRateText">সুদ: +২.৫% / ৫ সেকেন্ড</div>
+         <p id="centralDesc">সরকারি নিয়মকানুন। ১০,০০,০০০ পর্যন্ত ১০% সুদে লোন।</p>
+       </div>
+       <div class="bank-actions">
+         <button class="btn blue" onclick="app.openLoan('Central Bank', 1000000, 0.10)"><span class="lblLoanBtn">লোন</span></button>
+         <button class="btn green" onclick="app.openDepositModal('Central Bank', 0.025, 0, 0)"><span class="lblDepBtn">ডিপোজিট</span></button>
+         <button class="btn red" onclick="app.openRepayModal()"><span class="lblRepayBtn">পরিশোধ</span></button>
+       </div>
+     </div>
+
+     <!-- Golden Bank -->
+     <div class="bank-card">
+       <div>
+         <h3>🪙 Golden Bank <span class="bank-badge" id="badgeGolden" style="color:#ff5d6c">গোপন চোর! 🕵️</span></h3>
+         <div class="bank-rate" id="goldenRateText">উচ্চ সুদ: +৪.৫% / ৫ সেকেন্ড</div>
+         <p id="goldenDesc">১৫,০০,০০০ পর্যন্ত ১৪% সুদে লোন। তবে ডিপোজিটে ১০% চুরি হওয়ার সম্ভাবনা!</p>
+       </div>
+       <div class="bank-actions">
+         <button class="btn blue" onclick="app.openLoan('Golden Bank', 1500000, 0.14)"><span class="lblLoanBtn">লোন</span></button>
+         <button class="btn green" onclick="app.openDepositModal('Golden Bank', 0.045, 0.25, 0.10)"><span class="lblDepBtn">ডিপোজিট</span></button>
+         <button class="btn red" onclick="app.openRepayModal()"><span class="lblRepayBtn">পরিশোধ</span></button>
+       </div>
+     </div>
+
+     <!-- Shadow Bank -->
+     <div class="bank-card">
+       <div>
+         <h3>🌑 Shadow Bank <span class="bank-badge" id="badgeShadow" style="color:#ff5d6c">অতি মারাত্মক 💀</span></h3>
+         <div class="bank-rate" id="shadowRateText">বাম্পার সুদ: +৭.০% / ৫ সেকেন্ড</div>
+         <p id="shadowDesc">সর্বোচ্চ ২৫,০০,০০০ পর্যন্ত লোন (২৫% সুদ)! ডিপোজিটে ব্যাংক দেউলিয়া হওয়ার চান্স আছে।</p>
+       </div>
+       <div class="bank-actions">
+         <button class="btn blue" onclick="app.openLoan('Shadow Bank', 2500000, 0.25)"><span class="lblLoanBtn">লোন</span></button>
+         <button class="btn green" onclick="app.openDepositModal('Shadow Bank', 0.07, 0.15, 'bankrupt')"><span class="lblDepBtn">ডিপোজিট</span></button>
+         <button class="btn red" onclick="app.openRepayModal()"><span class="lblRepayBtn">পরিশোধ</span></button>
+       </div>
+     </div>
+   </div>
+ </div>
+</div>
+
+<!-- Deposit Custom UI Modal -->
+<div class="modal" id="depositModal">
+ <div class="modalbox">
+   <button class="close" onclick="app.closeModal('depositModal')">×</button>
+   <h2 id="modalDepTitle">🏦 Deposit Coins</h2>
+   <p id="modalDepSub" class="sub"></p>
+   
+   <div class="adjust-row" style="margin-bottom:10px;">
+     <button onclick="app.setDepAmount('half')">50% Cash</button>
+     <button onclick="app.setDepAmount('max')">100% Max</button>
+   </div>
+
+   <input id="depositAmountInput" type="number" min="1" value="1000">
+   <button class="btn green" style="width:100%;margin-top:12px" onclick="app.confirmDeposit()"><span id="lblConfirmDep">ডিপোজিট নিশ্চিত করুন</span></button>
+ </div>
+</div>
+
+<!-- Loan Modal -->
+<div class="modal" id="loanModal">
+ <div class="modalbox">
+   <button class="close" onclick="app.closeModal('loanModal')">×</button>
+   <h2 id="modalLoanTitle"> Take Loan</h2>
+   <p id="modalLoanDesc" class="sub"></p>
+   
+   <div class="adjust-row">
+     <button onclick="app.setLoanAmount(100000)">100K</button>
+     <button onclick="app.setLoanAmount(500000)">500K</button>
+     <button onclick="app.setLoanAmount('max')">MAX</button>
+   </div>
+
+   <input id="loanAmountInput" type="number" min="1" value="100000" oninput="app.calcLoanBreakdown()">
+   
+   <div class="calc-box">
+     <div><span id="lblBaseLoan">মূল লোন:</span> <b id="calcBase">0</b></div>
+     <div><span id="lblInterestFee">সুদ (Interest):</span> <b id="calcInterest" style="color:var(--red)">+0</b></div>
+     <hr style="border-color:#202838;margin:6px 0">
+     <div><span id="lblTotalRepay">মোট ফেরত দিতে হবে:</span> <b id="calcTotal" style="color:var(--gold)">0</b></div>
+   </div>
+
+   <button class="btn primary" style="width:100%;margin-top:12px" onclick="app.confirmLoan()"><span id="lblConfirmLoan">লোন নিশ্চিত করুন</span></button>
+ </div>
+</div>
+
+<!-- Repay Debt Modal -->
+<div class="modal" id="repayModal">
+ <div class="modalbox">
+   <button class="close" onclick="app.closeModal('repayModal')">×</button>
+   <h2>💳 <span id="lblRepayTitle">ঋণ পরিশোধ করুন (Repay Debt)</span></h2>
+   <p id="repaySub" class="sub"></p>
+   
+   <div class="adjust-row">
+     <button onclick="app.setRepayAmount('half')">50% Debt</button>
+     <button onclick="app.setRepayAmount('max')">100% Full Debt</button>
+   </div>
+
+   <input id="repayAmountInput" type="number" min="1" value="1000">
+   <button class="btn green" style="width:100%;margin-top:12px" onclick="app.confirmRepay()"><span id="lblConfirmRepay">পরিশোধ নিশ্চিত করুন</span></button>
+ </div>
+</div>
+
+<!-- Zero Balance Modal -->
+<div class="modal" id="zeroModal">
+ <div class="modalbox" style="text-align:center">
+   <div id="zeroModalContent"></div>
+   <div class="modal-btns">
+     <button class="btn blue" style="flex:1" onclick="app.goToBankFromModal()"><span id="lblGoBank">🏦 ব্যাংকে যান</span></button>
+     <button class="btn" style="flex:1" onclick="app.closeModal('zeroModal')"><span id="lblCloseZero">বন্ধ করুন</span></button>
+   </div>
+ </div>
+</div>
+
+<script>
+window.app = {
+  lang: 'bn',
+  state: { cash: 10000, debt: 0, deposit: 0, cycle: 1, winStreak: 0 },
+  activeDeposit: null,
+  depositTimer: null,
+  progressTimer: null,
+  progressVal: 0,
+  
+  selectedBank: null, selectedMax: 0, selectedInterest: 0,
+  selectedDepBank: null, selectedDepRate: 0, selectedDepRiskChance: 0, selectedDepRiskType: null,
+
+  i18n: {
+    bn: {
+      bankBtn: "🏦 ব্যাংক সিস্টেম", langBtn: "🌐 English", cash: "💰 ক্যাশ", debt: "💳 ঋণ", deposit: "🏦 ডিপোজিট", net: "📊 নেট ওয়ার্থ",
+      coinTitle: "🪙 কয়েন ফ্লিপ (Head or Tail)", coinSub: "আপনার পছন্দের দিক বেছে নিয়ে বাজি ধরুন।",
+      betUnderCoin: "বাজির পরিমাণ: ", resultPlace: "HEAD অথবা TAIL বেছে নিন।",
+      riskTitle: "ডাইনামিক অ্যালগরিদম ঝুঁকি", riskNormal: "সাধারণ বাজি", riskGreed: "লোভের ফাঁদ! অতিরিক্ত ঝুঁকি 🚨",
+      disclaimer: "এটি একটি সিমুলেশন গেম। কোনো বাস্তব টাকা বা আসল জুয়ার লেনদেন এখানে অন্তর্ভুক্ত নয়।",
+      bankModalTitle: "🏦 ব্যাংক সিস্টেম কেন্দ্রীয় হাব", bankModalSub: "আপনার সুবিধামতো ব্যাংকে লেনদেন করুন। প্রতিটি ব্যাংকের ঝুঁকি ও মুনাফা ভিন্ন!",
+      
+      badgePrime: "নিরাপদ", badgeCentral: "সরকারি", badgeGolden: "গোপন চোর! 🕵️", badgeShadow: "অতি মারাত্মক 💀",
+      loanBtnText: "লোন", depBtnText: "ডিপোজিট", repayBtnText: "পরিশোধ",
+      
+      primeRateText: "সুদ: +১.৫% / ৫ সেকেন্ড", primeDesc: "একদম নিরাপদ ব্যাংক। লোন ১৫% সুদে সর্বোচ্চ ২০,০০,০০০ coins।",
+      centralRateText: "সুদ: +২.৫% / ৫ সেকেন্ড", centralDesc: "সরকারি নিয়মকানুন। ১০,০০,০০০ পর্যন্ত ১০% সুদে লোন।",
+      goldenRateText: "উচ্চ সুদ: +৪.৫% / ৫ সেকেন্ড", goldenDesc: "১৫,০০,০০০ পর্যন্ত ১৪% সুদে লোন। তবে ডিপোজিটে ১০% চুরি হওয়ার সম্ভাবনা!",
+      shadowRateText: "বাম্পার সুদ: +৭.০% / ৫ সেকেন্ড", shadowDesc: "সর্বোচ্চ ২৫,০০,০০০ পর্যন্ত লোন (২৫% সুদ)! ডিপোজিটে ব্যাংক দেউলিয়া হওয়ার চান্স আছে।",
+      
+      logTitle: "📋 আর্থিক লগ", logSub: "আপনার সিদ্ধান্ত ও ফলাফলের বিবরণ।",
+      gameTitle: "⚙️ গেম কন্ট্রোল", cycleTitle: "চক্র:", reset: "গেম রিস্টার্ট করুন", goal: "লক্ষ্য: মানুষকে জুয়ার ভয়াবহতা সম্পর্কে বোঝানো এবং সচেতন করা। 😈",
+      confirmLoan: "লোন নিশ্চিত করুন", confirmDep: "ডিপোজিট নিশ্চিত করুন", goBank: "🏦 ব্যাংকে যান", closeZero: "বন্ধ করুন",
+      activeBankLabel: "রানিং ডিপোজিট: ", withdrawBtn: "💸 উত্তোলন করুন",
+      baseLoan: "মূল লোন:", interestFee: "সুদ (Interest):", totalRepay: "মোট ফেরত দিতে হবে:", repayTitle: "ঋণ পরিশোধ করুন (Repay Debt)", confirmRepay: "পরিশোধ নিশ্চিত করুন",
+      zeroMsg: `<h2>🚨 আপনার ব্যালেন্স শেষ!</h2><p>আপনার হাতে আর কোনো coin নেই। 😐<br>চিন্তা করবেন না—ব্যাংক আপনাকে সাহায্য করতে প্রস্তুত! 🏦<br>Loan নিয়ে আবার খেলুন এবং আপনার ভাগ্য পরীক্ষা করুন। 🙂</p>`
+    },
+    en: {
+      bankBtn: "🏦 Bank System", langBtn: "🌐 বাংলা", cash: "💰 Cash", debt: "💳 Debt", deposit: "🏦 Deposit", net: "📊 Net Worth",
+      coinTitle: "🪙 Coin Flip (Head or Tail)", coinSub: "Pick your choice and place your bet.",
+      betUnderCoin: "Bet Amount: ", resultPlace: "Choose HEAD or TAIL to flip.",
+      riskTitle: "Dynamic Algorithm Risk", riskNormal: "Normal Risk", riskGreed: "Greed Trap! High Loss Risk 🚨",
+      disclaimer: "This is a virtual simulation game. No real money or gambling involved.",
+      bankModalTitle: "🏦 Bank System Central Hub", bankModalSub: "Trade with banks at your choice. Every bank has different risk & rewards!",
+      
+      badgePrime: "Safe", badgeCentral: "Govt", badgeGolden: "Secret Thief! 🕵️", badgeShadow: "Extremely Lethal 💀",
+      loanBtnText: "Loan", depBtnText: "Deposit", repayBtnText: "Repay",
+      
+      primeRateText: "Interest: +1.5% / 5s", primeDesc: "100% safe bank. Max loan 20,00,000 at 15% interest.",
+      centralRateText: "Interest: +2.5% / 5s", centralDesc: "Govt rules. Up to 10,00,000 loan at 10% interest.",
+      goldenRateText: "High Interest: +4.5% / 5s", goldenDesc: "Up to 15,00,000 loan at 14% interest. 10% deposit steal risk!",
+      shadowRateText: "Bumper Interest: +7.0% / 5s", shadowDesc: "Max 25,00,000 loan at 25% interest! Bank bankruptcy risk on deposit.",
+      
+      logTitle: "📋 Financial Log", logSub: "History of your game decisions.",
+      gameTitle: "⚙️ Game Controls", cycleTitle: "Cycle:", reset: "Reset Game", goal: "Goal: Aware people about betting and gambling without going broke. 😈",
+      confirmLoan: "Confirm Loan", confirmDep: "Confirm Deposit", goBank: "🏦 Go to Bank", closeZero: "Close",
+      activeBankLabel: "Running Deposit: ", withdrawBtn: "💸 Withdraw",
+      baseLoan: "Base Loan:", interestFee: "Interest Fee:", totalRepay: "Total Debt Added:", repayTitle: "Repay Debt", confirmRepay: "Confirm Repay",
+      zeroMsg: `<h2>🚨 Your Balance Is Empty!</h2><p>You have no coins left. 😐<br>Don't worry—the banks are ready to help! 🏦<br>Take a loan and try your luck again. 🙂</p>`
+    }
+  },
+
+  init: function() {
+    this.render();
+    this.log(this.lang==='bn'?'🎮 গেম সফলভাবে লোড হয়েছে।':'🎮 Game loaded successfully.');
+  },
+
+  fmt: function(n) { return Math.floor(n).toLocaleString(); },
+
+  toggleLang: function() {
+    this.lang = this.lang === 'bn' ? 'en' : 'bn';
+    const t = this.i18n[this.lang];
+    
+    document.getElementById('lblBankBtn').textContent = t.bankBtn;
+    document.getElementById('lblLangBtn').textContent = t.langBtn;
+    document.getElementById('lblCash').textContent = t.cash;
+    document.getElementById('lblDebt').textContent = t.debt;
+    document.getElementById('lblDeposit').textContent = t.deposit;
+    document.getElementById('lblNet').textContent = t.net;
+    document.getElementById('lblCoinTitle').textContent = t.coinTitle;
+    document.getElementById('lblCoinSub').textContent = t.coinSub;
+    document.getElementById('lblRiskTitle').textContent = t.riskTitle;
+    document.getElementById('lblDisclaimer').textContent = t.disclaimer;
+    document.getElementById('lblBankModalTitle').textContent = t.bankModalTitle;
+    document.getElementById('lblBankModalSub').textContent = t.bankModalSub;
+    
+    document.getElementById('badgePrime').textContent = t.badgePrime;
+    document.getElementById('badgeCentral').textContent = t.badgeCentral;
+    document.getElementById('badgeGolden').textContent = t.badgeGolden;
+    document.getElementById('badgeShadow').textContent = t.badgeShadow;
+    
+    document.querySelectorAll('.lblLoanBtn').forEach(el => el.textContent = t.loanBtnText);
+    document.querySelectorAll('.lblDepBtn').forEach(el => el.textContent = t.depBtnText);
+    document.querySelectorAll('.lblRepayBtn').forEach(el => el.textContent = t.repayBtnText);
+
+    document.getElementById('primeRateText').textContent = t.primeRateText;
+    document.getElementById('primeDesc').textContent = t.primeDesc;
+    document.getElementById('centralRateText').textContent = t.centralRateText;
+    document.getElementById('centralDesc').textContent = t.centralDesc;
+    document.getElementById('goldenRateText').textContent = t.goldenRateText;
+    document.getElementById('goldenDesc').textContent = t.goldenDesc;
+    document.getElementById('shadowRateText').textContent = t.shadowRateText;
+    document.getElementById('shadowDesc').textContent = t.shadowDesc;
+    
+    document.getElementById('lblLogTitle').textContent = t.logTitle;
+    document.getElementById('lblLogSub').textContent = t.logSub;
+    document.getElementById('lblGameTitle').textContent = t.gameTitle;
+    document.getElementById('lblCycleTitle').textContent = t.cycleTitle;
+    document.getElementById('lblReset').textContent = t.reset;
+    document.getElementById('lblGoal').textContent = t.goal;
+    document.getElementById('lblConfirmLoan').textContent = t.confirmLoan;
+    document.getElementById('lblConfirmDep').textContent = t.confirmDep;
+    document.getElementById('lblGoBank').textContent = t.goBank;
+    document.getElementById('lblCloseZero').textContent = t.closeZero;
+    document.getElementById('lblActiveBank').textContent = t.activeBankLabel;
+    document.getElementById('lblWithdrawBtn').textContent = t.withdrawBtn;
+    
+    document.getElementById('lblBaseLoan').textContent = t.baseLoan;
+    document.getElementById('lblInterestFee').textContent = t.interestFee;
+    document.getElementById('lblTotalRepay').textContent = t.totalRepay;
+    document.getElementById('lblRepayTitle').textContent = t.repayTitle;
+    document.getElementById('lblConfirmRepay').textContent = t.confirmRepay;
+
+    this.updateBetUnderCoin();
+  },
+
+  adjBet: function(val) {
+    let inp = document.getElementById('betInput');
+    let current = Number(inp.value) || 0;
+    if(val === 'half') current = Math.floor(current / 2);
+    else if(val === 'double') current = current * 2;
+    else current += val;
+    inp.value = Math.max(1, current);
+    this.updateBetUnderCoin();
+  },
+
+  updateBetUnderCoin: function() {
+    let val = Math.max(0, Number(document.getElementById('betInput').value) || 0);
+    document.getElementById('betUnderCoin').textContent = this.i18n[this.lang].betUnderCoin + this.fmt(val) + " coins";
+    
+    let isHighRatio = (val / Math.max(this.state.cash, 1)) > 0.4 || val > 50000;
+    if(isHighRatio && this.state.winStreak >= 2) {
+      document.getElementById('riskText').textContent = this.i18n[this.lang].riskGreed;
+      document.getElementById('riskFill').style.width = '90%';
+      document.getElementById('riskFill').style.background = '#ff5d6c';
+    } else {
+      document.getElementById('riskText').textContent = this.i18n[this.lang].riskNormal;
+      document.getElementById('riskFill').style.width = '25%';
+      document.getElementById('riskFill').style.background = '#43e08a';
+    }
+  },
+
+  render: function() {
+    document.getElementById('cash').textContent = this.fmt(this.state.cash);
+    document.getElementById('debt').textContent = this.fmt(this.state.debt);
+    document.getElementById('deposit').textContent = this.fmt(this.state.deposit);
+    document.getElementById('net').textContent = this.fmt(this.state.cash + this.state.deposit - this.state.debt);
+    document.getElementById('cycle').textContent = this.state.cycle;
+    this.updateBetUnderCoin();
+  },
+
+  log: function(msg, cls='') {
+    let p = document.createElement('p');
+    p.innerHTML = msg;
+    if(cls) p.className = cls;
+    document.getElementById('log').prepend(p);
+  },
+
+  /* MAIN FLIP FUNCTION - NOW WITH HEAD / TAIL SELECTION */
+  flip: function(playerChoice) {
+    let bet = Math.floor(Number(document.getElementById('betInput').value));
+    if(!bet || bet < 1) { alert(this.lang==='bn'?'সঠিক বাজি লিখুন।':'Enter a valid bet.'); return; }
+    if(bet > this.state.cash) { alert(this.lang==='bn'?'❌ পর্যাপ্ত ক্যাশ নেই!':'❌ Not enough cash.'); return; }
+
+    let winChance = 0.50;
+    let isHighBet = (bet / this.state.cash) >= 0.35 || bet >= 50000;
+
+    if (this.state.winStreak < 2 && !isHighBet) {
+      winChance = 0.70; 
+    } else if (this.state.winStreak >= 2 && isHighBet) {
+      winChance = 0.18; 
+    } else if (isHighBet) {
+      winChance = 0.30;
+    }
+
+    this.state.cash -= bet;
+    document.getElementById('btnHead').disabled = true;
+    document.getElementById('btnTail').disabled = true;
+    
+    document.getElementById('result').textContent = this.lang === 'bn' 
+      ? `কয়েন ঘুরছে... (আপনার পছন্দ: ${playerChoice})` 
+      : `Coin is spinning... (Your choice: ${playerChoice})`;
+    
+    let coin = document.getElementById('coin');
+    coin.classList.remove('flip');
+    void coin.offsetWidth;
+    coin.classList.add('flip');
+
+    let self = this;
+    setTimeout(function() {
+      let win = Math.random() < winChance;
+      let actualOutcome = playerChoice;
+
+      if(!win) {
+        actualOutcome = playerChoice === 'HEAD' ? 'TAIL' : 'HEAD';
+      }
+
+      coin.textContent = actualOutcome;
+
+      if(win) {
+        self.state.cash += bet * 2;
+        self.state.winStreak++;
+        document.getElementById('result').innerHTML = `<span class="greenText">${self.lang==='bn'?'আপনি জিতেছেন!':'YOU WON!'}</span> (${actualOutcome}) +${self.fmt(bet)}`;
+        self.log(`🟢 ${self.lang==='bn'?'কয়েন ফ্লিপ: জিতেছে':'Coin Flip: Won'} [${playerChoice}] -> +${self.fmt(bet)} coins.`);
+      } else {
+        self.state.winStreak = 0;
+        document.getElementById('result').innerHTML = `<span class="redText">${self.lang==='bn'?'আপনি হেরেছেন!':'YOU LOST!'}</span> (${actualOutcome}) -${self.fmt(bet)}`;
+        self.log(`🔴 ${self.lang==='bn'?'কয়েন ফ্লিপ: হেরেছে':'Coin Flip: Lost'} [${playerChoice}] -> -${self.fmt(bet)} coins.`, 'redText');
+      }
+      
+      document.getElementById('btnHead').disabled = false;
+      document.getElementById('btnTail').disabled = false;
+      self.render();
+
+      if(self.state.cash <= 0 && self.state.deposit <= 0) {
+        self.triggerZeroModal();
+      }
+    }, 650);
+  },
+
+  triggerZeroModal: function() {
+    document.getElementById('zeroModalContent').innerHTML = this.i18n[this.lang].zeroMsg;
+    document.getElementById('zeroModal').classList.add('show');
+  },
+
+  openModal: function(id) { document.getElementById(id).classList.add('show'); },
+  closeModal: function(id) { document.getElementById(id).classList.remove('show'); },
+
+  goToBankFromModal: function() {
+    this.closeModal('zeroModal');
+    this.openModal('bankModal');
+  },
+
+  /* --- LOAN SYSTEM WITH LIVE CALCULATOR --- */
+  openLoan: function(bank, max, interest) {
+    this.selectedBank = bank; this.selectedMax = max; this.selectedInterest = interest;
+    document.getElementById('modalLoanTitle').textContent = '💳 ' + bank + ' Loan';
+    
+    let desc = this.lang==='bn' 
+      ? `সর্বোচ্চ লোন সীমা: ${this.fmt(max)} coins • সুদের হার: ${Math.round(interest*100)}%` 
+      : `Max Loan Limit: ${this.fmt(max)} coins • Interest Rate: ${Math.round(interest*100)}%`;
+    document.getElementById('modalLoanDesc').textContent = desc;
+    document.getElementById('loanAmountInput').value = Math.min(100000, max);
+    
+    this.calcLoanBreakdown();
+    this.closeModal('bankModal');
+    this.openModal('loanModal');
+  },
+
+  setLoanAmount: function(val) {
+    let inp = document.getElementById('loanAmountInput');
+    if(val === 'max') inp.value = this.selectedMax;
+    else inp.value = Math.min(val, this.selectedMax);
+    this.calcLoanBreakdown();
+  },
+
+  calcLoanBreakdown: function() {
+    let base = Math.floor(Number(document.getElementById('loanAmountInput').value)) || 0;
+    if(base > this.selectedMax) {
+      base = this.selectedMax;
+      document.getElementById('loanAmountInput').value = base;
+    }
+    let interestFee = Math.floor(base * this.selectedInterest);
+    let total = base + interestFee;
+
+    document.getElementById('calcBase').textContent = this.fmt(base);
+    document.getElementById('calcInterest').textContent = '+' + this.fmt(interestFee);
+    document.getElementById('calcTotal').textContent = this.fmt(total);
+  },
+
+  confirmLoan: function() {
+    let amount = Math.floor(Number(document.getElementById('loanAmountInput').value));
+    if(!amount || amount < 1 || amount > this.selectedMax) { 
+      alert(this.lang==='bn'?'সঠিক লোনের পরিমাণ লিখুন।':'Invalid loan amount.'); 
+      return; 
+    }
+    
+    let interestAmount = amount * this.selectedInterest;
+    let totalDebtAdded = amount + interestAmount;
+    
+    this.state.cash += amount;
+    this.state.debt += totalDebtAdded;
+    
+    let msg = this.lang==='bn'
+      ? `💳 <b>${this.selectedBank}</b>: লোন গ্রহণ +${this.fmt(amount)} (সুদ সহ মোট ঋণ যোগ: +${this.fmt(totalDebtAdded)})`
+      : `💳 <b>${this.selectedBank}</b>: Received Loan +${this.fmt(amount)} (Total Debt Added: +${this.fmt(totalDebtAdded)})`;
+      
+    this.log(msg, 'goldText');
+    this.closeModal('loanModal');
+    this.render();
+  },
+
+  /* --- REPAY LOAN SYSTEM --- */
+  openRepayModal: function() {
+    if(this.state.debt <= 0) {
+      alert(this.lang==='bn'?'আপনার কোনো বকেয়া ঋণ নেই!':'You have no debt to repay!');
+      return;
+    }
+    document.getElementById('repaySub').textContent = this.lang==='bn'
+      ? `বর্তমান মোট ঋণ: ${this.fmt(this.state.debt)} coins | আপনার ক্যাশ: ${this.fmt(this.state.cash)} coins`
+      : `Current Total Debt: ${this.fmt(this.state.debt)} coins | Available Cash: ${this.fmt(this.state.cash)} coins`;
+    
+    document.getElementById('repayAmountInput').value = Math.min(this.state.cash, this.state.debt);
+    this.closeModal('bankModal');
+    this.openModal('repayModal');
+  },
+
+  setRepayAmount: function(type) {
+    let inp = document.getElementById('repayAmountInput');
+    if(type === 'half') inp.value = Math.floor(Math.min(this.state.cash, this.state.debt) / 2);
+    if(type === 'max') inp.value = Math.min(this.state.cash, this.state.debt);
+  },
+
+  confirmRepay: function() {
+    let amount = Math.floor(Number(document.getElementById('repayAmountInput').value));
+    if(!amount || amount < 1) return;
+    if(amount > this.state.cash) {
+      alert(this.lang==='bn'?'❌ আপনার কাছে পর্যাপ্ত ক্যাশ নেই!':'❌ Not enough cash.');
+      return;
+    }
+    if(amount > this.state.debt) {
+      amount = this.state.debt;
+    }
+
+    this.state.cash -= amount;
+    this.state.debt -= amount;
+
+    let msg = this.lang==='bn'
+      ? `✅ ঋণ পরিশোধ করা হয়েছে: <b>-${this.fmt(amount)}</b> coins`
+      : `✅ Repaid Debt: <b>-${this.fmt(amount)}</b> coins`;
+      
+    this.log(msg, 'greenText');
+    this.closeModal('repayModal');
+    this.render();
+  },
+
+  /* --- DEPOSIT SYSTEM WITH CUSTOM UI --- */
+  openDepositModal: function(bank, rate, riskChance, riskType) {
+    if(this.activeDeposit) {
+      alert(this.lang==='bn'?'আপনার একটি ডিপোজিট ইতোমধ্যে চলছে! আগে সেটি তুলে নিন।':'You already have an active deposit! Withdraw first.');
+      return;
+    }
+    this.selectedDepBank = bank;
+    this.selectedDepRate = rate;
+    this.selectedDepRiskChance = riskChance;
+    this.selectedDepRiskType = riskType;
+
+    document.getElementById('modalDepTitle').textContent = '🏦 Deposit: ' + bank;
+    let desc = this.lang==='bn'
+      ? `আপনার ব্যালেন্স: ${this.fmt(this.state.cash)} coins • মুনাফা: +${(rate*100).toFixed(1)}%/৫s`
+      : `Available Cash: ${this.fmt(this.state.cash)} coins • Profit: +${(rate*100).toFixed(1)}%/5s`;
+    document.getElementById('modalDepSub').textContent = desc;
+    document.getElementById('depositAmountInput').value = Math.min(10000, this.state.cash);
+
+    this.closeModal('bankModal');
+    this.openModal('depositModal');
+  },
+
+  setDepAmount: function(type) {
+    let inp = document.getElementById('depositAmountInput');
+    if(type === 'half') inp.value = Math.floor(this.state.cash / 2);
+    if(type === 'max') inp.value = this.state.cash;
+  },
+
+  confirmDeposit: function() {
+    let amount = Math.floor(Number(document.getElementById('depositAmountInput').value));
+    if(!amount || amount < 1) return;
+    if(amount > this.state.cash) { 
+      alert(this.lang==='bn'?'❌ পর্যাপ্ত ক্যাশ নেই।':'❌ Not enough cash.'); 
+      return; 
+    }
+
+    this.state.cash -= amount;
+    this.state.deposit = amount;
+    this.activeDeposit = { 
+      bank: this.selectedDepBank, 
+      rate: this.selectedDepRate, 
+      riskChance: this.selectedDepRiskChance, 
+      riskType: this.selectedDepRiskType 
+    };
+
+    this.closeModal('depositModal');
+    this.startDepositTimer();
+    
+    let msg = this.lang==='bn'
+      ? `🏦 <b>${this.selectedDepBank}</b>-এ ${this.fmt(amount)} coins ডিপোজিট করা হয়েছে।`
+      : `🏦 Deposited <b>${this.fmt(amount)}</b> coins at ${this.selectedDepBank}.`;
+    this.log(msg);
+    this.render();
+  },
+
+  startDepositTimer: function() {
+    document.getElementById('activeDepositTracker').style.display = 'block';
+    document.getElementById('activeBankName').textContent = this.activeDeposit.bank;
+    document.getElementById('activeBankRate').textContent = `(+${(this.activeDeposit.rate * 100).toFixed(1)}%/5s)`;
+
+    let self = this;
+    this.progressVal = 0;
+    
+    this.progressTimer = setInterval(function() {
+      self.progressVal += 2;
+      if(self.progressVal > 100) self.progressVal = 0;
+      document.getElementById('timerFill').style.width = self.progressVal + '%';
+    }, 100);
+
+    this.depositTimer = setInterval(function() {
+      if(!self.activeDeposit) return;
+
+      if(self.activeDeposit.riskChance > 0 && Math.random() < self.activeDeposit.riskChance) {
+        if(self.activeDeposit.riskType === 'bankrupt') {
+          let msg = self.lang==='bn'
+            ? `🚨 <b>${self.activeDeposit.bank} দেউলিয়া হয়ে গেছে!</b> আপনার পুরো ${self.fmt(self.state.deposit)} coins মার গেল! 😆`
+            : `🚨 <b>${self.activeDeposit.bank} BANKRUPT!</b> Your full deposit ${self.fmt(self.state.deposit)} coins are gone! 😆`;
+          self.log(msg, 'redText');
+          self.clearDepositState();
+          self.render();
+          return;
+        } else {
+          let stolen = self.state.deposit * self.activeDeposit.riskType;
+          self.state.deposit -= stolen;
+          let msg = self.lang==='bn'
+            ? `🕵️ <b>${self.activeDeposit.bank} গোপন চার্জ!</b> ব্যাংক -${self.fmt(stolen)} coins কেটে নিয়েছে! 😆`
+            : `🕵️ <b>${self.activeDeposit.bank} Secret Fee!</b> Bank stole -${self.fmt(stolen)} coins! 😆`;
+          self.log(msg, 'redText');
+        }
+      }
+
+      let profit = self.state.deposit * self.activeDeposit.rate;
+      self.state.deposit += profit;
+      
+      let msg = self.lang==='bn'
+        ? `💰 <b>${self.activeDeposit.bank}</b> মুনাফা যোগ হয়েছে: +${self.fmt(profit)} coins.`
+        : `💰 <b>${self.activeDeposit.bank}</b> Interest Added: +${self.fmt(profit)} coins.`;
+      self.log(msg, 'greenText');
+      self.render();
+
+    }, 5000);
+  },
+
+  clearDepositState: function() {
+    clearInterval(this.depositTimer);
+    clearInterval(this.progressTimer);
+    this.depositTimer = null;
+    this.progressTimer = null;
+    this.activeDeposit = null;
+    this.state.deposit = 0;
+    document.getElementById('activeDepositTracker').style.display = 'none';
+  },
+
+  withdrawDeposit: function() {
+    if(!this.activeDeposit || this.state.deposit <= 0) return;
+    let amount = this.state.deposit;
+    this.state.cash += amount;
+    
+    let msg = this.lang==='bn'
+      ? `💸 ${this.activeDeposit.bank} থেকে পুরো <b>${this.fmt(amount)}</b> coins উত্তোলন করা হয়েছে।`
+      : `💸 Withdrew full deposit <b>${this.fmt(amount)}</b> coins from ${this.activeDeposit.bank}.`;
+      
+    this.log(msg);
+    this.clearDepositState();
+    this.render();
+  },
+
+  resetGame: function() {
+    if(!confirm(this.lang==='bn'?'গেম রিসেট করতে চান?':'Reset game?')) return;
+    this.clearDepositState();
+    this.state = { cash: 10000, debt: 0, deposit: 0, cycle: 1, winStreak: 0 };
+    document.getElementById('log').innerHTML = '';
+    document.getElementById('coin').textContent = 'HEAD';
+    document.getElementById('result').textContent = this.i18n[this.lang].resultPlace;
+    this.log(this.lang==='bn'?'🎮 গেম রিসেট করা হয়েছে।':'🎮 Game reset. Starting balance: 10,000 coins.');
+    this.render();
+  }
+};
+
+window.onload = function() { window.app.init(); };
+</script>
+</body>
+</html>
